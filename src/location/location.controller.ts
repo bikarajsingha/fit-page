@@ -7,7 +7,6 @@ import {
   HttpException,
   HttpStatus,
   Param,
-  ParseIntPipe,
   Post,
   Put,
   Query,
@@ -17,7 +16,7 @@ import {
 import { LocationDto } from './dto/location.dto';
 import { LocationService } from './location.service';
 
-@Controller('cats')
+@Controller('locations')
 export class LocationController {
   constructor(private service: LocationService) {}
   @Post()
@@ -26,6 +25,11 @@ export class LocationController {
   async createLocation(@Body() locationDto: LocationDto) {
     try {
       await this.service.createLocation(locationDto);
+
+      return {
+        status: true,
+        code: 'LM_LC_CREATE_LOCATION_SUCCESS',
+      };
     } catch (error) {
       throw new HttpException(
         {
@@ -42,11 +46,15 @@ export class LocationController {
   @Get()
   @HttpCode(HttpStatus.OK)
   async getLocations(
-    @Query('limit', new ParseIntPipe()) limit = 10,
-    @Query('offset', new ParseIntPipe()) skip = 10,
+    @Query('limit') limit: string,
+    @Query('offset') skip: string,
   ) {
     try {
-      await this.service.getLocations(limit, skip);
+      return {
+        status: true,
+        code: 'LM_LC_GET_LOCATIONS_SUCCESS',
+        locations: await this.service.getLocations(limit, skip),
+      };
     } catch (error) {
       throw new HttpException(
         {
@@ -64,7 +72,11 @@ export class LocationController {
   @HttpCode(HttpStatus.OK)
   async getLocation(@Param('locationId') locationId: string) {
     try {
-      await this.service.getLocation(locationId);
+      return {
+        status: true,
+        code: 'LM_LC_GET_LOCATION_SUCCESS',
+        location: await this.service.getLocation(locationId),
+      };
     } catch (error) {
       throw new HttpException(
         {
@@ -87,6 +99,11 @@ export class LocationController {
   ) {
     try {
       await this.service.updateLocation(locationId, locationDto);
+
+      return {
+        status: true,
+        code: 'LM_LC_UPDATE_LOCATION_SUCCESS',
+      };
     } catch (error) {
       throw new HttpException(
         {
@@ -105,6 +122,11 @@ export class LocationController {
   async deleteLocation(@Param('locationId') locationId: string) {
     try {
       await this.service.deleteLocation(locationId);
+
+      return {
+        status: true,
+        code: 'LM_LC_DELETE_LOCATION_SUCCESS',
+      };
     } catch (error) {
       throw new HttpException(
         {

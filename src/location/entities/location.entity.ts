@@ -6,4 +6,6 @@ export interface LocationEntity {
   latitude: number;
   longitude: number;
   deletedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }

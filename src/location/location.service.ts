@@ -1,6 +1,7 @@
-import { ObjectId, Filter } from 'mongodb';
+import { ObjectId, Filter, FindOptions } from 'mongodb';
 
 import {
+  BadRequestException,
   HttpException,
   HttpStatus,
   Injectable,
@@ -20,11 +21,32 @@ export class LocationService {
 
   async createLocation(locationDto: LocationDto) {
     try {
+      const nameLowercase = locationDto.name.toLowerCase();
+      const rawLocation = await this.repository.get({
+        $or: [
+          { name: nameLowercase },
+          {
+            $and: [
+              { latitude: locationDto.latitude },
+              { longitude: locationDto.longitude },
+            ],
+          },
+        ],
+        deletedAt: { $exists: false },
+      });
+
+      if (rawLocation) {
+        throw new BadRequestException({
+          code: 'LM_LC_CREATE_LOCATION_FAILURE_ALREADY_EXIST',
+        });
+      }
       const locationEntity: LocationEntity = {
         _id: new ObjectId(),
-        name: locationDto.name,
+        name: nameLowercase,
         latitude: locationDto.latitude,
         longitude: locationDto.longitude,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
 
       await this.repository.create(locationEntity);
@@ -41,15 +63,36 @@ export class LocationService {
     }
   }
 
-  async getLocations(limit: number, skip: number) {
+  async getLocations(limit: string, skip: string) {
     try {
+      const findOptions: FindOptions = {
+        limit: 10,
+        skip: 0,
+      };
+
+      if (limit) {
+        const limitConverted = Number(limit);
+
+        if (!isNaN(limitConverted)) {
+          findOptions.limit = limitConverted;
+        }
+      }
+
+      if (skip) {
+        const skipConverted = Number(skip);
+
+        if (!isNaN(skipConverted)) {
+          findOptions.skip = skipConverted;
+        }
+      }
+
       const rawLocations = await this.repository.getMany(
         {
           deletedAt: {
             $exists: false,
           },
         },
-        { limit, skip },
+        findOptions,
       );
 
       return await Promise.all(
@@ -85,7 +128,7 @@ export class LocationService {
         });
       }
 
-      return rawLocation;
+      return await this.transformer.tranformEntityToInterface(rawLocation);
     } catch (error) {
       throw new HttpException(
         {
@@ -101,6 +144,7 @@ export class LocationService {
 
   async updateLocation(locationId: string, locationDto: LocationDto) {
     try {
+      const nameLowercase = locationDto.name.toLowerCase();
       const filter: Filter<Document> = {
         _id: new ObjectId(locationId),
         deletedAt: {
@@ -114,10 +158,35 @@ export class LocationService {
           code: 'LM_LC_UPDATE_LOCATION_FAILURE_NOT_FOUND',
         });
       }
+
+      const duplicateLocation = await this.repository.get({
+        deletedAt: { $exists: false },
+        _id: {
+          $ne: new ObjectId(locationId),
+        },
+        $or: [
+          {
+            name: nameLowercase,
+          },
+          {
+            $and: [
+              { latitude: locationDto.latitude },
+              { longitude: locationDto.longitude },
+            ],
+          },
+        ],
+      });
+
+      if (duplicateLocation) {
+        throw new BadRequestException({
+          code: 'LM_LC_UPDATE_LOCATION_FAILURE_ALREADY_EXIST',
+        });
+      }
       const locationEntity: Partial<LocationEntity> = {
-        name: locationDto.name,
+        name: nameLowercase,
         latitude: locationDto.latitude,
         longitude: locationDto.longitude,
+        updatedAt: new Date(),
       };
 
       await this.repository.updateOne(filter, { $set: locationEntity });
