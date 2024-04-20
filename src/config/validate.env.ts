@@ -1,7 +1,11 @@
 export function validate(config: Record<string, unknown>) {
     const requiredVariables: string[] = [
         //App
-        'PORT'
+        'PORT',
+
+        //Database
+        'DATABASE_URL',
+        'DATABASE_NAME'
     ]
 
     const missingVariables = requiredVariables.filter((envVariables) => !config.hasOwnProperty(envVariables))
