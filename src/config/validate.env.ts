@@ -13,6 +13,10 @@ export function validate(config: Record<string, unknown>) {
 
     // Cache
     'CACHE_EXPIRE_DURATION',
+
+    // Rate limit
+    'THROTTLE_TTL',
+    'THROTTLE_LIMIT',
   ];
 
   const missingVariables = requiredVariables.filter(

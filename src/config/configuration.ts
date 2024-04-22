@@ -16,4 +16,10 @@ export default () => ({
 
   // Cache
   cacheTimeDuration: Number(process.env.CACHE_EXPIRE_DURATION),
+
+  // Rate limit
+  rateLimit: {
+    timeToLive: Number(process.env.THROTTLE_TTL),
+    limit: Number(process.env.THROTTLE_LIMIT),
+  },
 });
