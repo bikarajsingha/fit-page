@@ -11,9 +11,11 @@ import { ConfigService } from '@nestjs/config';
 import { WeatherResponse } from './interfaces/weather-response';
 import { WeatherTransformer } from './transformer/weather.transformer';
 import { Cache } from 'cache-manager';
+import { WeatherLogger } from '../logger/logger.service';
 
 @Injectable()
 export class WeatherService {
+  private context = { class: WeatherService.name };
   private weatherForecastConfig: { baseUrl: string; key: string };
   private cacheExpireDuration: number;
 
@@ -22,6 +24,7 @@ export class WeatherService {
     private locationService: LocationService,
     private apiClientService: ApiClientService,
     private tranformer: WeatherTransformer,
+    private loggerService: WeatherLogger,
     @Inject('CACHE_MANAGER') private cacheManager: Cache,
   ) {
     this.weatherForecastConfig = this.configService.get('weatherForecast');
@@ -30,6 +33,11 @@ export class WeatherService {
   }
 
   async getForecast(locationId: string) {
+    const context = {
+      ...this.context,
+      function: this.getForecast.name,
+    };
+
     try {
       const location = await this.locationService.getLocation(locationId);
 
@@ -59,8 +67,20 @@ export class WeatherService {
         );
       }
 
+      this.loggerService.log(
+        'Request to weather api',
+        { url: getForecastUrl },
+        context,
+      );
+
       return await this.tranformer.tranformResponseToInterface(response);
     } catch (error) {
+      this.loggerService.error(
+        'WM_WS_GET_LOCATION_WEATHER_FAILURE',
+        { message: error.message, errorstack: error.stack },
+        context,
+      );
+
       throw new HttpException(
         {
           status: false,
@@ -74,6 +94,11 @@ export class WeatherService {
   }
 
   async getHistory(days: string, lat: string, long: string) {
+    const context = {
+      ...this.context,
+      function: this.getHistory.name,
+    };
+
     try {
       const daysInNumber = Number(days) - 1;
       if (isNaN(daysInNumber) || daysInNumber < 0 || daysInNumber > 29) {
@@ -103,7 +128,7 @@ export class WeatherService {
         });
       }
 
-      const getHistoryUrl = `${this.weatherForecastConfig.baseUrl}/history.json?key=${this.weatherForecastConfig.key}&q=${latInNumber},${longInNumber}&dt=${startDate}&end_dt=${endDate}`;
+      const getHistoryUrl = `${this.weatherForecastConfig.baseUrl}/history.json?key=asdf${this.weatherForecastConfig.key}&q=${latInNumber},${longInNumber}&dt=${startDate}&end_dt=${endDate}`;
       const cacheKey = `${getHistoryUrl}--${this.convertDate(
         new Date(),
         true,
@@ -123,8 +148,20 @@ export class WeatherService {
         );
       }
 
+      this.loggerService.log(
+        'Request to weather api',
+        { url: getHistoryUrl },
+        context,
+      );
+
       return await this.tranformer.tranformResponseToInterface(response);
     } catch (error) {
+      this.loggerService.error(
+        'WM_WS_GET_LOCATION_WEATHER_HISTORY_FAILURE',
+        { message: error.message, errorstack: error.stack },
+        context,
+      );
+
       throw new HttpException(
         {
           status: false,

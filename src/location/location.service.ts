@@ -11,15 +11,20 @@ import { LocationDto } from './dto/location.dto';
 import { LocationEntity } from './entities/location.entity';
 import { LocationRepository } from './location.repository';
 import { LocationTransformer } from './transformer/location.transformer';
+import { WeatherLogger } from '../logger/logger.service';
 
 @Injectable()
 export class LocationService {
+  private context = { class: LocationService.name };
   constructor(
     private repository: LocationRepository,
     private transformer: LocationTransformer,
+    private loggerService: WeatherLogger,
   ) {}
 
   async createLocation(locationDto: LocationDto) {
+    const context = { ...this.context, function: this.createLocation.name };
+
     try {
       const nameLowercase = locationDto.name.toLowerCase();
       const rawLocation = await this.repository.get({
@@ -37,7 +42,7 @@ export class LocationService {
 
       if (rawLocation) {
         throw new BadRequestException({
-          code: 'LM_LC_CREATE_LOCATION_FAILURE_ALREADY_EXIST',
+          code: 'LM_LS_CREATE_LOCATION_FAILURE_ALREADY_EXIST',
         });
       }
       const locationEntity: LocationEntity = {
@@ -51,12 +56,18 @@ export class LocationService {
 
       await this.repository.create(locationEntity);
     } catch (error) {
+      this.loggerService.error(
+        'LM_LS_CREATE_LOCATION_FAILURE',
+        { message: error.message, errorstack: error.stack },
+        context,
+      );
+
       throw new HttpException(
         {
           status: false,
           code: error?.response?.code
             ? error.response.code
-            : 'LM_LC_CREATE_LOCATION_FAILURE',
+            : 'LM_LS_CREATE_LOCATION_FAILURE',
         },
         error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
       );
@@ -64,6 +75,8 @@ export class LocationService {
   }
 
   async getLocations(limit: string, skip: string) {
+    const context = { ...this.context, function: this.getLocations.name };
+
     try {
       const findOptions: FindOptions = {
         limit: 10,
@@ -101,12 +114,18 @@ export class LocationService {
         }),
       );
     } catch (error) {
+      this.loggerService.error(
+        'LM_LS_GET_LOCATIONS_FAILURE',
+        { message: error.message, errorstack: error.stack },
+        context,
+      );
+
       throw new HttpException(
         {
           status: false,
           code: error?.response?.code
             ? error.response.code
-            : 'LM_LC_GET_LOCATIONS_FAILURE',
+            : 'LM_LS_GET_LOCATIONS_FAILURE',
         },
         error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
       );
@@ -114,6 +133,8 @@ export class LocationService {
   }
 
   async getLocation(locationId: string) {
+    const context = { ...this.context, function: this.getLocation.name };
+
     try {
       const rawLocation = await this.repository.get({
         _id: new ObjectId(locationId),
@@ -124,18 +145,24 @@ export class LocationService {
 
       if (!rawLocation) {
         throw new NotFoundException({
-          code: 'LM_LC_GET_LOCATION_FAILURE_NOT_FOUND',
+          code: 'LM_LS_GET_LOCATION_FAILURE_NOT_FOUND',
         });
       }
 
       return await this.transformer.tranformEntityToInterface(rawLocation);
     } catch (error) {
+      this.loggerService.error(
+        'LM_LS_GET_LOCATION_FAILURE',
+        { message: error.message, errorstack: error.stack },
+        context,
+      );
+
       throw new HttpException(
         {
           status: false,
           code: error?.response?.code
             ? error.response.code
-            : 'LM_LC_GET_LOCATION_FAILURE',
+            : 'LM_LS_GET_LOCATION_FAILURE',
         },
         error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
       );
@@ -143,6 +170,8 @@ export class LocationService {
   }
 
   async updateLocation(locationId: string, locationDto: LocationDto) {
+    const context = { ...this.context, function: this.updateLocation.name };
+
     try {
       const nameLowercase = locationDto.name.toLowerCase();
       const filter: Filter<Document> = {
@@ -155,7 +184,7 @@ export class LocationService {
       const rawLocation = await this.repository.get(filter);
       if (!rawLocation) {
         throw new NotFoundException({
-          code: 'LM_LC_UPDATE_LOCATION_FAILURE_NOT_FOUND',
+          code: 'LM_LS_UPDATE_LOCATION_FAILURE_NOT_FOUND',
         });
       }
 
@@ -179,7 +208,7 @@ export class LocationService {
 
       if (duplicateLocation) {
         throw new BadRequestException({
-          code: 'LM_LC_UPDATE_LOCATION_FAILURE_ALREADY_EXIST',
+          code: 'LM_LS_UPDATE_LOCATION_FAILURE_ALREADY_EXIST',
         });
       }
       const locationEntity: Partial<LocationEntity> = {
@@ -191,12 +220,18 @@ export class LocationService {
 
       await this.repository.updateOne(filter, { $set: locationEntity });
     } catch (error) {
+      this.loggerService.error(
+        'LM_LS_UPDATE_LOCATION_FAILURE',
+        { message: error.message, errorstack: error.stack },
+        context,
+      );
+
       throw new HttpException(
         {
           status: false,
           code: error?.response?.code
             ? error.response.code
-            : 'LM_LC_UPDATE_LOCATION_FAILURE',
+            : 'LM_LS_UPDATE_LOCATION_FAILURE',
         },
         error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
       );
@@ -204,6 +239,8 @@ export class LocationService {
   }
 
   async deleteLocation(locationId: string) {
+    const context = { ...this.context, function: this.deleteLocation.name };
+
     try {
       const filter: Filter<Document> = {
         _id: new ObjectId(locationId),
@@ -215,7 +252,7 @@ export class LocationService {
       const rawLocation = await this.repository.get(filter);
       if (!rawLocation) {
         throw new NotFoundException({
-          code: 'LM_LC_DELETE_LOCATION_FAILURE_NOT_FOUND',
+          code: 'LM_LS_DELETE_LOCATION_FAILURE_NOT_FOUND',
         });
       }
 
@@ -225,12 +262,18 @@ export class LocationService {
         },
       });
     } catch (error) {
+      this.loggerService.error(
+        'LM_LS_DELETE_LOCATION_FAILURE',
+        { message: error.message, errorstack: error.stack },
+        context,
+      );
+
       throw new HttpException(
         {
           status: false,
           code: error?.response?.code
             ? error.response.code
-            : 'LM_LC_DELETE_LOCATION_FAILURE',
+            : 'LM_LS_DELETE_LOCATION_FAILURE',
         },
         error.status ?? HttpStatus.INTERNAL_SERVER_ERROR,
       );

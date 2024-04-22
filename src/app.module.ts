@@ -3,7 +3,7 @@ import * as path from 'path';
 import configuration from './config/configuration';
 import { validate } from './config/validate.env';
 
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -12,6 +12,8 @@ import { WeatherModule } from './weather/weather.module';
 import { ApiCleintModule } from './api-client/api-client.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { LoggerMiddleware } from './middlewares/logger.middleware';
+import { WeatherLoggerModule } from './logger/logger.module';
 
 @Module({
   imports: [
@@ -36,6 +38,7 @@ import { APP_GUARD } from '@nestjs/core';
     WeatherModule,
     LocationModule,
     ApiCleintModule,
+    WeatherLoggerModule,
   ],
   controllers: [AppController],
   providers: [
@@ -46,4 +49,8 @@ import { APP_GUARD } from '@nestjs/core';
     AppService,
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(LoggerMiddleware).forRoutes('*');
+  }
+}

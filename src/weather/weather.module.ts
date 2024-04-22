@@ -7,6 +7,7 @@ import { ApiCleintModule } from '../api-client/api-client.module';
 import { ConfigModule } from '@nestjs/config';
 import { WeatherTransformer } from './transformer/weather.transformer';
 import { CacheModule } from '@nestjs/cache-manager';
+import { WeatherLoggerModule } from '../logger/logger.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { CacheModule } from '@nestjs/cache-manager';
     LocationModule,
     ApiCleintModule,
     CacheModule.register(),
+    WeatherLoggerModule,
   ],
   controllers: [WeatherController],
   providers: [WeatherService, WeatherTransformer],

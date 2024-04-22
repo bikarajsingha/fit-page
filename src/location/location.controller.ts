@@ -15,14 +15,23 @@ import {
 } from '@nestjs/common';
 import { LocationDto } from './dto/location.dto';
 import { LocationService } from './location.service';
+import { WeatherLogger } from '../logger/logger.service';
 
 @Controller('locations')
 export class LocationController {
-  constructor(private service: LocationService) {}
+  private context = { class: LocationController.name };
+
+  constructor(
+    private service: LocationService,
+    private loggerService: WeatherLogger,
+  ) {}
+
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @UsePipes(new ValidationPipe({ stopAtFirstError: true }))
   async createLocation(@Body() locationDto: LocationDto) {
+    const context = { ...this.context, function: this.createLocation.name };
+
     try {
       await this.service.createLocation(locationDto);
 
@@ -31,6 +40,12 @@ export class LocationController {
         code: 'LM_LC_CREATE_LOCATION_SUCCESS',
       };
     } catch (error) {
+      this.loggerService.error(
+        'LM_LC_CREATE_LOCATION_FAILURE',
+        { message: error.message, errorstack: error.stack },
+        context,
+      );
+
       throw new HttpException(
         {
           status: false,
@@ -49,6 +64,8 @@ export class LocationController {
     @Query('limit') limit: string,
     @Query('offset') skip: string,
   ) {
+    const context = { ...this.context, function: this.getLocations.name };
+
     try {
       return {
         status: true,
@@ -56,6 +73,12 @@ export class LocationController {
         locations: await this.service.getLocations(limit, skip),
       };
     } catch (error) {
+      this.loggerService.error(
+        'LM_LC_GET_LOCATIONS_FAILURE',
+        { message: error.message, errorstack: error.stack },
+        context,
+      );
+
       throw new HttpException(
         {
           status: false,
@@ -71,6 +94,8 @@ export class LocationController {
   @Get(':locationId')
   @HttpCode(HttpStatus.OK)
   async getLocation(@Param('locationId') locationId: string) {
+    const context = { ...this.context, function: this.getLocation.name };
+
     try {
       return {
         status: true,
@@ -78,6 +103,12 @@ export class LocationController {
         location: await this.service.getLocation(locationId),
       };
     } catch (error) {
+      this.loggerService.error(
+        'LM_LC_GET_LOCATION_FAILURE',
+        { message: error.message, errorstack: error.stack },
+        context,
+      );
+
       throw new HttpException(
         {
           status: false,
@@ -97,6 +128,8 @@ export class LocationController {
     @Param('locationId') locationId: string,
     @Body() locationDto: LocationDto,
   ) {
+    const context = { ...this.context, function: this.updateLocation.name };
+
     try {
       await this.service.updateLocation(locationId, locationDto);
 
@@ -105,6 +138,12 @@ export class LocationController {
         code: 'LM_LC_UPDATE_LOCATION_SUCCESS',
       };
     } catch (error) {
+      this.loggerService.error(
+        'LM_LC_UPDATE_LOCATION_FAILURE',
+        { message: error.message, errorstack: error.stack },
+        context,
+      );
+
       throw new HttpException(
         {
           status: false,
@@ -120,6 +159,8 @@ export class LocationController {
   @Delete(':locationId')
   @HttpCode(HttpStatus.OK)
   async deleteLocation(@Param('locationId') locationId: string) {
+    const context = { ...this.context, function: this.deleteLocation.name };
+
     try {
       await this.service.deleteLocation(locationId);
 
@@ -128,6 +169,12 @@ export class LocationController {
         code: 'LM_LC_DELETE_LOCATION_SUCCESS',
       };
     } catch (error) {
+      this.loggerService.error(
+        'LM_LC_DELETE_LOCATION_FAILURE',
+        { message: error.message, errorstack: error.stack },
+        context,
+      );
+
       throw new HttpException(
         {
           status: false,
