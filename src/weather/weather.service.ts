@@ -128,7 +128,7 @@ export class WeatherService {
         });
       }
 
-      const getHistoryUrl = `${this.weatherForecastConfig.baseUrl}/history.json?key=asdf${this.weatherForecastConfig.key}&q=${latInNumber},${longInNumber}&dt=${startDate}&end_dt=${endDate}`;
+      const getHistoryUrl = `${this.weatherForecastConfig.baseUrl}/history.json?key=${this.weatherForecastConfig.key}&q=${latInNumber},${longInNumber}&dt=${startDate}&end_dt=${endDate}`;
       const cacheKey = `${getHistoryUrl}--${this.convertDate(
         new Date(),
         true,
