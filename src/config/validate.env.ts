@@ -1,15 +1,18 @@
 export function validate(config: Record<string, unknown>) {
   const requiredVariables: string[] = [
-    //App
+    // App
     'PORT',
 
-    //Database
+    // Database
     'DATABASE_URL',
     'DATABASE_NAME',
 
-    //Weather forecast
+    // Weather forecast
     'WEATHER_API_KEY',
     'WEATHER_API_BASE_URL',
+
+    // Cache
+    'CACHE_EXPIRE_DURATION',
   ];
 
   const missingVariables = requiredVariables.filter(

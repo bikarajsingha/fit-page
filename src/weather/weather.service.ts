@@ -15,6 +15,7 @@ import { Cache } from 'cache-manager';
 @Injectable()
 export class WeatherService {
   private weatherForecastConfig: { baseUrl: string; key: string };
+  private cacheExpireDuration: number;
 
   constructor(
     private configService: ConfigService,
@@ -24,6 +25,8 @@ export class WeatherService {
     @Inject('CACHE_MANAGER') private cacheManager: Cache,
   ) {
     this.weatherForecastConfig = this.configService.get('weatherForecast');
+    this.cacheExpireDuration =
+      this.configService.get<number>('cacheTimeDuration');
   }
 
   async getForecast(locationId: string) {
@@ -49,7 +52,11 @@ export class WeatherService {
         );
 
         // Save to cache
-        await this.cacheManager.set(cacheKey, response);
+        await this.cacheManager.set(
+          cacheKey,
+          response,
+          this.cacheExpireDuration,
+        );
       }
 
       return await this.tranformer.tranformResponseToInterface(response);
@@ -102,7 +109,11 @@ export class WeatherService {
         );
 
         // Save to cache
-        await this.cacheManager.set(cacheKey, response);
+        await this.cacheManager.set(
+          cacheKey,
+          response,
+          this.cacheExpireDuration,
+        );
       }
 
       return await this.tranformer.tranformResponseToInterface(response);
