@@ -2,6 +2,7 @@ import {
   BadRequestException,
   HttpException,
   HttpStatus,
+  Inject,
   Injectable,
 } from '@nestjs/common';
 import { LocationService } from '../location/location.service';
@@ -9,6 +10,7 @@ import { ApiClientService } from '../api-client/api-client.service';
 import { ConfigService } from '@nestjs/config';
 import { WeatherResponse } from './interfaces/weather-response';
 import { WeatherTransformer } from './transformer/weather.transformer';
+import { Cache } from 'cache-manager';
 
 @Injectable()
 export class WeatherService {
@@ -19,6 +21,7 @@ export class WeatherService {
     private locationService: LocationService,
     private apiClientService: ApiClientService,
     private tranformer: WeatherTransformer,
+    @Inject('CACHE_MANAGER') private cacheManager: Cache,
   ) {
     this.weatherForecastConfig = this.configService.get('weatherForecast');
   }
@@ -33,10 +36,22 @@ export class WeatherService {
         });
       }
 
-      const getForecastUrl = `${this.weatherForecastConfig.baseUrl}/forecast.json?key=${this.weatherForecastConfig.key}&q=${location.latitude},${location.longitude}&days=1`;
-      const response = await this.apiClientService.get<WeatherResponse>(
-        getForecastUrl,
-      );
+      const getForecastUrl = `${this.weatherForecastConfig.baseUrl}/forecast.json?key=${this.weatherForecastConfig.key}&q=${location.latitude},${location.longitude}&days=10`;
+      const cacheKey = `${getForecastUrl}--${this.convertDate(
+        new Date(),
+        true,
+      )}`;
+
+      let response = await this.cacheManager.get<WeatherResponse>(cacheKey);
+      if (!response) {
+        response = await this.apiClientService.get<WeatherResponse>(
+          getForecastUrl,
+        );
+
+        // Save to cache
+        await this.cacheManager.set(cacheKey, response);
+      }
+
       return await this.tranformer.tranformResponseToInterface(response);
     } catch (error) {
       throw new HttpException(
@@ -75,9 +90,21 @@ export class WeatherService {
       }
 
       const getHistoryUrl = `${this.weatherForecastConfig.baseUrl}/history.json?key=${this.weatherForecastConfig.key}&q=${latInNumber},${longInNumber}&dt=${startDate}&end_dt=${endDate}`;
-      const response = await this.apiClientService.get<WeatherResponse>(
-        getHistoryUrl,
-      );
+      const cacheKey = `${getHistoryUrl}--${this.convertDate(
+        new Date(),
+        true,
+      )}`;
+
+      let response = await this.cacheManager.get<WeatherResponse>(cacheKey);
+      if (!response) {
+        response = await this.apiClientService.get<WeatherResponse>(
+          getHistoryUrl,
+        );
+
+        // Save to cache
+        await this.cacheManager.set(cacheKey, response);
+      }
+
       return await this.tranformer.tranformResponseToInterface(response);
     } catch (error) {
       throw new HttpException(
@@ -92,10 +119,17 @@ export class WeatherService {
     }
   }
 
-  convertDate(currentDate: Date) {
+  convertDate(currentDate: Date, allowHour: boolean = false) {
     const year = currentDate.getFullYear();
     const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
     const day = currentDate.getDate().toString().padStart(2, '0');
+
+    if (allowHour) {
+      return `${year}-${month}-${day}:${currentDate
+        .getHours()
+        .toString()
+        .padStart(2, '0')}`;
+    }
 
     return `${year}-${month}-${day}`;
   }
