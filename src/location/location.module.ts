@@ -9,5 +9,6 @@ import { LocationTransformer } from './transformer/location.transformer';
   imports: [DatabaseModule],
   controllers: [LocationController],
   providers: [LocationService, LocationRepository, LocationTransformer],
+  exports: [LocationService],
 })
 export class LocationModule {}
