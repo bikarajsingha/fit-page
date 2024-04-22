@@ -12,9 +12,7 @@ export class ApiClientService {
       const { data } = await firstValueFrom(
         this.httpService.get<T>(url).pipe(
           catchError((error: AxiosError) => {
-            console.log(error.response.data);
-            //   this.logger.error(error.response.data);
-            throw 'An error happened!';
+            throw error;
           }),
         ),
       );

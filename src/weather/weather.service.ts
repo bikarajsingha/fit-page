@@ -90,7 +90,14 @@ export class WeatherService {
       const latInNumber = Number(lat);
       const longInNumber = Number(long);
 
-      if (isNaN(latInNumber) || isNaN(longInNumber)) {
+      if (
+        isNaN(latInNumber) ||
+        isNaN(longInNumber) ||
+        latInNumber > 90 ||
+        latInNumber < -90 ||
+        longInNumber > 180 ||
+        longInNumber < -180
+      ) {
         throw new BadRequestException({
           code: 'WM_WS_GET_LOCATION_WEATHER_HISTORY_INVALID_COORDIATES',
         });
